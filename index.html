@@ -66,13 +66,21 @@ h2.title{margin:4px 0 0;font-size:20px}
 .qbadge{font-size:12px;font-weight:800;padding:4px 12px;border-radius:99px}
 .qbadge.add{background:rgba(40,199,111,.18);color:var(--add)}
 .qbadge.sub{background:rgba(255,122,89,.18);color:var(--sub)}
-.q{font-size:42px;font-weight:900;letter-spacing:1px;text-align:center}
+.q{font-size:clamp(26px,8vw,42px);font-weight:900;letter-spacing:1px;text-align:center;
+   line-height:1.5;padding:0 4px}
 .q .op{color:var(--gold)}
-.q .blank{color:var(--purple);border-bottom:4px solid var(--purple);padding:0 10px}
-.ans{min-width:150px;text-align:center;font-size:34px;font-weight:900;padding:8px 16px;border-radius:14px;
-  background:rgba(0,0,0,.28);border:2px dashed var(--line);min-height:56px}
-.ans.ok{border:2px solid var(--add);background:rgba(40,199,111,.2)}
-.ans.no{border:2px solid var(--red);background:rgba(255,92,114,.2);animation:shake .3s}
+
+/* ruang jawapan sebaris dengan soalan */
+.slot{display:inline-block;min-width:2.6em;padding:0 .28em;margin:0 .1em;
+  color:#fff;text-align:center;vertical-align:baseline;
+  background:rgba(0,0,0,.3);border-radius:10px;
+  border-bottom:.12em solid var(--purple);transition:.12s}
+.slot.empty{background:rgba(167,139,250,.14)}
+.slot.empty::after{content:'';display:inline-block;width:.09em;height:.9em;
+  background:var(--gold);vertical-align:-.1em;animation:blink 1.05s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.slot.ok{border-bottom-color:var(--add);background:rgba(40,199,111,.28);color:var(--add)}
+.slot.no{border-bottom-color:var(--red);background:rgba(255,92,114,.28);color:var(--red);animation:shake .3s}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 
 .float{position:absolute;top:6px;font-size:22px;font-weight:900;color:var(--gold);opacity:0;pointer-events:none}
@@ -221,8 +229,7 @@ th{color:var(--dim);font-size:12px;font-weight:600}
   <div class="qwrap">
     <div class="float" id="float"></div>
     <span class="qbadge add" id="qBadge">Tambah</span>
-    <div class="q" id="qText">1 + 1 = ?</div>
-    <div class="ans" id="ansBox"></div>
+    <div class="q" id="qText">1 + 1 = <span class="slot empty"></span></div>
   </div>
 
   <div class="pad">
@@ -481,25 +488,32 @@ function nextQ(){
   const b=document.getElementById('qBadge');
   b.className='qbadge '+(G.q.op==='+'?'add':'sub');
   b.textContent=G.q.op==='+'?'Tambah':'Tolak';
+  // ruang jawapan diletak tepat di kedudukan '?' dalam soalan
   document.getElementById('qText').innerHTML=
-    G.q.txt.replace(/([+−])/g,'<span class="op">$1</span>').replace(/\?/g,'<span class="blank">?</span>');
-  const a=document.getElementById('ansBox'); a.className='ans'; a.textContent='';
+    G.q.txt.replace(/([+−])/g,'<span class="op">$1</span>')
+           .replace('?','<span class="slot empty" id="slot"></span>');
+  drawAns();
 }
 
+function slot(){return document.getElementById('slot')}
 function tap(d){if(G&&G.buf.length<4){G.buf+=d;drawAns();beep(660,.04)}}
 function del(){if(G){G.buf=G.buf.slice(0,-1);drawAns()}}
-function drawAns(){document.getElementById('ansBox').textContent=G.buf}
+function drawAns(){
+  const s=slot(); if(!s)return;
+  s.textContent=G.buf;
+  s.className='slot'+(G.buf===''?' empty':'');
+}
 
 function submit(){
   if(!G||G.buf==='')return;
-  const box=document.getElementById('ansBox');
+  const box=slot();
   const val=parseInt(G.buf,10);
   G.qn++;
   if(val===G.q.ans){
     G.ok++; G.run++;
     let pts=10+Math.min(G.streak,10)*2;
     G.score+=pts;
-    box.className='ans ok'; beep(880,.1); buzz(30);
+    box.className='slot ok'; beep(880,.1); buzz(30);
     pop('+'+pts);
     S.todayCount++; S.xp+=pts; save();
     if(G.run%3===0){                       // 3 betul berturut = 1 streak
@@ -515,7 +529,7 @@ function submit(){
   }else{
     G.no++; G.run=0; G.streak=0;
     G.wrong.push(G.q.txt.replace('?',G.q.ans));
-    box.className='ans no'; beep(180,.22,'sawtooth'); buzz([40,40,40]);
+    box.className='slot no'; beep(180,.22,'sawtooth'); buzz([40,40,40]);
   }
   paintHud();
   setTimeout(()=>{
