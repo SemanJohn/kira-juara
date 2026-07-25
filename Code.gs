@@ -57,6 +57,17 @@ function clean_(v, max){
 
 function num_(v){ var n = parseInt(v,10); return isNaN(n) ? 0 : n; }
 
+/**
+ * Sheets menganggap sel bermula '+' atau '-' sebagai formula, jadi operasi
+ * disimpan sebagai perkataan. Semua perbandingan guna label ini.
+ */
+function opLabel_(op){
+  op = String(op || '').trim();
+  if(op === '+' || op === 'tambah') return 'tambah';
+  if(op === '-' || op === 'tolak')  return 'tolak';
+  return 'campur';
+}
+
 /* JSONP / JSON keluaran */
 function out_(obj, callback){
   var json = JSON.stringify(obj);
@@ -105,7 +116,7 @@ function submit_(p){
     var nama   = clean_(p.nama, 14).toUpperCase() || 'JUARA';
     var kelas  = clean_(p.kelas, 14);
     var mode   = clean_(p.mode, 8)  || 'tt';
-    var op     = clean_(p.op, 2)    || 'x';
+    var op     = opLabel_(p.op);
     var tahap  = clean_(p.tahap, 12)|| 'mudah';
     var markah = num_(p.markah), betul = num_(p.betul), silap = num_(p.silap);
     var streak = num_(p.streak);
@@ -150,7 +161,7 @@ function bumpDaily_(tarikh, id, nama, kelas, betul, silap, markah, streak){
 /* ---------- 3. papan markah ---------- */
 /** Markah TERBAIK setiap pemain bagi kombinasi operasi + tahap. */
 function leaderboard_(p){
-  var op    = clean_(p.op, 2)     || 'x';
+  var op    = opLabel_(p.op);
   var tahap = clean_(p.tahap, 12) || 'mudah';
   var limit = Math.min(num_(p.limit) || 20, 100);
 
@@ -158,7 +169,7 @@ function leaderboard_(p){
   var best = {};
   for(var i = 1; i < v.length; i++){
     if(String(v[i][5]) !== 'tt') continue;
-    if(String(v[i][6]) !== op || String(v[i][7]) !== tahap) continue;
+    if(opLabel_(v[i][6]) !== op || String(v[i][7]) !== tahap) continue;
     var id = String(v[i][2]), m = num_(v[i][8]);
     if(!best[id] || m > best[id].markah){
       best[id] = {id:id, nama:v[i][3], kelas:v[i][4], markah:m,
@@ -176,6 +187,18 @@ function rankOf_(op, tahap, markah){
   var lb = leaderboard_({op:op, tahap:tahap, limit:100}).rows;
   for(var i = 0; i < lb.length; i++) if(lb[i].markah <= markah) return i + 1;
   return lb.length + 1;
+}
+
+/** Buang semua baris milik satu id. Jalankan dari editor untuk padam data ujian. */
+function padamId(id){
+  id = id || 'ujian-claude';
+  [[SHEET_SCORES, HEAD_SCORES, 2], [SHEET_DAILY, HEAD_DAILY, 1]].forEach(function(cfg){
+    var s = sheet_(cfg[0], cfg[1]), v = s.getDataRange().getValues(), n = 0;
+    for(var i = v.length - 1; i >= 1; i--){
+      if(String(v[i][cfg[2]]) === id){ s.deleteRow(i + 1); n++; }
+    }
+    Logger.log(cfg[0] + ': ' + n + ' baris dipadam');
+  });
 }
 
 /* ---------- 4. statistik pemain ---------- */
