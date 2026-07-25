@@ -51,6 +51,12 @@ function today_(){
   return Utilities.formatDate(new Date(), 'Asia/Kuala_Lumpur', 'yyyy-MM-dd');
 }
 
+/** Sheets menukar '2026-07-25' kepada objek Date. Normalkan semula ke 'yyyy-MM-dd'. */
+function dstr_(v){
+  if(v instanceof Date) return Utilities.formatDate(v, 'Asia/Kuala_Lumpur', 'yyyy-MM-dd');
+  return String(v == null ? '' : v).slice(0, 10);
+}
+
 function clean_(v, max){
   return String(v == null ? '' : v).replace(/[<>\t\r\n]/g,'').trim().slice(0, max || 20);
 }
@@ -142,7 +148,7 @@ function bumpDaily_(tarikh, id, nama, kelas, betul, silap, markah, streak){
   var s = sheet_(SHEET_DAILY, HEAD_DAILY);
   var v = s.getDataRange().getValues();
   for(var i = 1; i < v.length; i++){
-    if(String(v[i][0]) === tarikh && String(v[i][1]) === id){
+    if(dstr_(v[i][0]) === tarikh && String(v[i][1]) === id){
       s.getRange(i+1, 3, 1, 8).setValues([[
         nama, kelas,
         num_(v[i][4]) + 1,
@@ -173,7 +179,7 @@ function leaderboard_(p){
     var id = String(v[i][2]), m = num_(v[i][8]);
     if(!best[id] || m > best[id].markah){
       best[id] = {id:id, nama:v[i][3], kelas:v[i][4], markah:m,
-                  betul:num_(v[i][9]), tarikh:String(v[i][1])};
+                  betul:num_(v[i][9]), tarikh:dstr_(v[i][1])};
     }
   }
   var rows = Object.keys(best).map(function(k){ return best[k]; })
@@ -210,7 +216,7 @@ function me_(p){
   var harian = [], jum = {sesi:0, betul:0, silap:0, streak:0};
   for(var i = 1; i < v.length; i++){
     if(String(v[i][1]) !== id) continue;
-    harian.push({tarikh:String(v[i][0]), sesi:num_(v[i][4]), betul:num_(v[i][5]),
+    harian.push({tarikh:dstr_(v[i][0]), sesi:num_(v[i][4]), betul:num_(v[i][5]),
                  silap:num_(v[i][6]), markahTerbaik:num_(v[i][7]), streakTerbaik:num_(v[i][8])});
     jum.sesi  += num_(v[i][4]);
     jum.betul += num_(v[i][5]);
