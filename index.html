@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d2340">
+<title>Kira Juara</title>
+<style>
+:root{
+  --bg:#0d2340; --bg2:#132f57; --card:rgba(255,255,255,.07); --card2:rgba(255,255,255,.12);
+  --line:rgba(255,255,255,.14);
+  --txt:#eaf2ff; --dim:#9fb3d1;
+  --add:#28c76f; --sub:#ff7a59; --gold:#ffc542; --blue:#4b9dff; --red:#ff5c72; --purple:#a78bfa;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(1200px 700px at 50% -10%,#1b4a86 0%,var(--bg) 55%,#081729 100%);
+  color:var(--txt); overflow:hidden; user-select:none;
+}
+#app{max-width:520px;margin:0 auto;height:100dvh;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;padding:16px;overflow-y:auto;display:none;flex-direction:column;gap:14px}
+.screen.on{display:flex;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-size:26px;font-weight:900;letter-spacing:-.5px}
+.brand .p{color:var(--add)} .brand .m{color:var(--sub)}
+.sub{color:var(--dim);font-size:13px;margin-top:-6px}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;cursor:pointer;transition:.15s}
+.card:active{transform:scale(.98);background:var(--card2)}
+.card h3{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px}
+.card p{margin:0;color:var(--dim);font-size:13px;line-height:1.4}
+.card.flat{cursor:default}
+.card.flat:active{transform:none;background:var(--card)}
+
+.goal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.goal .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
+.bar{height:8px;border-radius:99px;background:rgba(0,0,0,.3);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--add),var(--gold));width:0;transition:width .4s}
+
+.btn{border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:800;font-family:inherit;
+  background:var(--card);color:var(--txt);border:1px solid var(--line);cursor:pointer;width:100%}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:linear-gradient(135deg,var(--add),#159a52);border:0;color:#03210f}
+.btn.ghost{background:transparent}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+h2.title{margin:4px 0 0;font-size:20px}
+.hint{color:var(--dim);font-size:12px;text-align:center;line-height:1.5}
+.hint b{color:var(--gold)}
+
+/* ---- game ---- */
+.hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hud div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px;text-align:center}
+.hud small{display:block;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.hud b{font-size:20px}
+#timeBox.warn b{color:var(--red)}
+#timeBox.frozen{border-color:var(--blue);box-shadow:0 0 0 2px rgba(75,157,255,.35) inset}
+#timeBox.frozen b{color:var(--blue)}
+
+.qwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:150px;position:relative}
+.qbadge{font-size:12px;font-weight:800;padding:4px 12px;border-radius:99px}
+.qbadge.add{background:rgba(40,199,111,.18);color:var(--add)}
+.qbadge.sub{background:rgba(255,122,89,.18);color:var(--sub)}
+.q{font-size:42px;font-weight:900;letter-spacing:1px;text-align:center}
+.q .op{color:var(--gold)}
+.q .blank{color:var(--purple);border-bottom:4px solid var(--purple);padding:0 10px}
+.ans{min-width:150px;text-align:center;font-size:34px;font-weight:900;padding:8px 16px;border-radius:14px;
+  background:rgba(0,0,0,.28);border:2px dashed var(--line);min-height:56px}
+.ans.ok{border:2px solid var(--add);background:rgba(40,199,111,.2)}
+.ans.no{border:2px solid var(--red);background:rgba(255,92,114,.2);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+.float{position:absolute;top:6px;font-size:22px;font-weight:900;color:var(--gold);opacity:0;pointer-events:none}
+.float.go{animation:up .9s ease-out}
+@keyframes up{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-46px)}}
+
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.key{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 0;font-size:22px;
+  font-weight:800;text-align:center;color:var(--txt);cursor:pointer;font-family:inherit}
+.key:active{transform:scale(.95);background:var(--card2)}
+.key.ok{background:linear-gradient(135deg,var(--add),#159a52);border:0;color:#03210f}
+.key.del{color:var(--sub)}
+
+/* ---- result ---- */
+.big{font-size:54px;font-weight:900;text-align:center;color:var(--gold);line-height:1}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px} .stat small{color:var(--dim);font-size:11px}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--dim);font-size:12px;font-weight:600}
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bdg{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 6px;text-align:center;opacity:.35}
+.bdg.got{opacity:1;border-color:var(--gold);box-shadow:0 0 14px rgba(255,197,66,.2)}
+.bdg .ic{font-size:28px} .bdg small{display:block;font-size:10px;color:var(--dim);margin-top:4px}
+.sw{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.toggle{width:52px;height:30px;border-radius:99px;background:rgba(0,0,0,.4);position:relative;cursor:pointer;border:1px solid var(--line)}
+.toggle i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:99px;background:var(--dim);transition:.2s}
+.toggle.on{background:rgba(40,199,111,.3);border-color:var(--add)}
+.toggle.on i{left:25px;background:var(--add)}
+.chip{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:13px;margin:0 6px 6px 0;cursor:pointer}
+.chip.on{background:rgba(75,157,255,.25);border-color:var(--blue)}
+.chip.op-add.on{background:rgba(40,199,111,.25);border-color:var(--add)}
+.chip.op-sub.on{background:rgba(255,122,89,.25);border-color:var(--sub)}
+.chip.op-mix.on{background:rgba(167,139,250,.25);border-color:var(--purple)}
+.spacer{flex:1}
+.foot{text-align:center;color:var(--dim);font-size:11px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ============ MENU ============ -->
+<section id="s-menu" class="screen on">
+  <div class="topbar">
+    <div>
+      <div class="brand">Kira <span class="p">+</span><span class="m">−</span> Juara</div>
+      <div class="sub">Tambah &amp; tolak, jadi juara!</div>
+    </div>
+    <div class="pill" id="lvPill">Lv 1</div>
+  </div>
+
+  <div class="goal">
+    <div class="row"><span>Matlamat hari ini</span><b id="goalTxt">0 / 30 betul</b></div>
+    <div class="bar"><i id="goalBar"></i></div>
+  </div>
+
+  <div class="card" onclick="go('s-level')">
+    <h3>⏱️ Time Trial</h3>
+    <p>Mudah · Sederhana · Sukar · Hero — 60 saat</p>
+  </div>
+  <div class="card" onclick="go('s-practice')">
+    <h3>📘 Latihan</h3>
+    <p>Pilih operasi &amp; julat sendiri · Tiada had masa</p>
+  </div>
+  <div class="card" onclick="go('s-board')">
+    <h3>🏆 Papan Markah</h3>
+    <p>Markah tertinggi kamu setiap tahap</p>
+  </div>
+  <div class="card" onclick="openBadges()">
+    <h3>🎖️ Lencana</h3>
+    <p id="bdgCount">0 / 9 diperoleh</p>
+  </div>
+  <div class="card" onclick="go('s-set')">
+    <h3>⚙️ Tetapan</h3>
+    <p>Bunyi, getaran, nama pemain</p>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="foot">Kira Juara — prototaip v0.1 · markah disimpan dalam peranti ini sahaja</div>
+</section>
+
+<!-- ============ PILIH TAHAP ============ -->
+<section id="s-level" class="screen">
+  <h2 class="title">Time Trial</h2>
+  <div class="card flat">
+    <p style="margin-bottom:8px">1. Pilih operasi</p>
+    <div id="ttOps">
+      <span class="chip op-add on" data-op="+">➕ Tambah</span>
+      <span class="chip op-sub" data-op="-">➖ Tolak</span>
+      <span class="chip op-mix" data-op="x">🔀 Campur</span>
+    </div>
+  </div>
+  <p style="margin:0;color:var(--dim);font-size:13px">2. Pilih tahap</p>
+  <div class="card" onclick="startTT('mudah')">
+    <h3>🟢 Mudah</h3><p>Nombor 1–20 · jawapan tak melebihi 20 · 60 saat</p>
+  </div>
+  <div class="card" onclick="startTT('sederhana')">
+    <h3>🔵 Sederhana</h3><p>2 digit (hingga 99) · dengan mengumpul semula · 60 saat</p>
+  </div>
+  <div class="card" onclick="startTT('sukar')">
+    <h3>🟠 Sukar</h3><p>3 digit (hingga 999) · mengumpul semula · 60 saat</p>
+  </div>
+  <div class="card" onclick="startTT('hero')">
+    <h3>🟣 Hero</h3><p>Soalan terbalik: ? + 8 = 15 · 25 − ? = 9 · 60 saat</p>
+  </div>
+  <div class="hint">3 betul = 1 streak <b>+3 saat</b> · 3 streak = <b>beku 5 saat</b><br>3 kali beku = <b>masa penuh semula!</b></div>
+  <div class="spacer"></div>
+  <button class="btn ghost" onclick="go('s-menu')">Kembali</button>
+</section>
+
+<!-- ============ LATIHAN ============ -->
+<section id="s-practice" class="screen">
+  <h2 class="title">Latihan bebas</h2>
+  <div class="card flat">
+    <p style="margin-bottom:8px">Operasi</p>
+    <div id="opChips">
+      <span class="chip on" data-op="+">Tambah +</span>
+      <span class="chip on" data-op="-">Tolak −</span>
+    </div>
+  </div>
+  <div class="card flat">
+    <p style="margin-bottom:8px">Julat nombor</p>
+    <div id="rangeChips">
+      <span class="chip on" data-r="mudah">1–20</span>
+      <span class="chip" data-r="sederhana">1–99</span>
+      <span class="chip" data-r="sukar">1–999</span>
+      <span class="chip" data-r="hero">Terbalik (?)</span>
+    </div>
+  </div>
+  <div class="hint">Tiada had masa. 20 soalan setiap sesi.</div>
+  <div class="spacer"></div>
+  <button class="btn pri" onclick="startPractice()">Mula Latihan</button>
+  <button class="btn ghost" onclick="go('s-menu')">Kembali</button>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="s-game" class="screen">
+  <div class="hud">
+    <div><small>Markah</small><b id="hScore">0</b></div>
+    <div><small>Streak</small><b id="hStreak">0</b></div>
+    <div id="timeBox"><small id="tLabel">Masa</small><b id="hTime">60</b></div>
+  </div>
+
+  <div class="qwrap">
+    <div class="float" id="float"></div>
+    <span class="qbadge add" id="qBadge">Tambah</span>
+    <div class="q" id="qText">1 + 1 = ?</div>
+    <div class="ans" id="ansBox"></div>
+  </div>
+
+  <div class="pad">
+    <button class="key" onclick="tap('1')">1</button>
+    <button class="key" onclick="tap('2')">2</button>
+    <button class="key" onclick="tap('3')">3</button>
+    <button class="key" onclick="tap('4')">4</button>
+    <button class="key" onclick="tap('5')">5</button>
+    <button class="key" onclick="tap('6')">6</button>
+    <button class="key" onclick="tap('7')">7</button>
+    <button class="key" onclick="tap('8')">8</button>
+    <button class="key" onclick="tap('9')">9</button>
+    <button class="key del" onclick="del()">⌫</button>
+    <button class="key" onclick="tap('0')">0</button>
+    <button class="key ok" onclick="submit()">✓</button>
+  </div>
+  <button class="btn ghost" onclick="endGame()">Tamat sesi</button>
+</section>
+
+<!-- ============ KEPUTUSAN ============ -->
+<section id="s-result" class="screen">
+  <h2 class="title" id="rTitle">Tamat!</h2>
+  <div class="big" id="rScore">0</div>
+  <div class="hint" id="rNew"></div>
+  <div class="stats">
+    <div class="stat"><b id="rOk">0</b><small>Betul</small></div>
+    <div class="stat"><b id="rNo">0</b><small>Silap</small></div>
+    <div class="stat"><b id="rStreak">0</b><small>Streak terbaik</small></div>
+    <div class="stat"><b id="rAcc">0%</b><small>Kejituan</small></div>
+  </div>
+  <div class="card flat" id="reviewCard" style="display:none">
+    <h3>📝 Soalan untuk diulang kaji</h3>
+    <div id="reviewList" style="font-size:14px;color:var(--dim);line-height:1.8"></div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn pri" onclick="replay()">Main lagi</button>
+  <button class="btn ghost" onclick="go('s-menu')">Menu</button>
+</section>
+
+<!-- ============ PAPAN MARKAH ============ -->
+<section id="s-board" class="screen">
+  <h2 class="title">Papan Markah</h2>
+  <div id="bTabs">
+    <span class="chip on" data-tab="local">📱 Peranti ini</span>
+    <span class="chip" data-tab="global">🌏 Global</span>
+  </div>
+
+  <div id="tabLocal">
+    <table><thead><tr><th>Tahap</th><th style="text-align:center;color:var(--add)">➕</th>
+      <th style="text-align:center;color:var(--sub)">➖</th>
+      <th style="text-align:center;color:var(--purple)">🔀</th></tr></thead>
+    <tbody id="boardBody"></tbody></table>
+    <div class="hint">Markah tertinggi Time Trial mengikut operasi &amp; tahap.</div>
+  </div>
+
+  <div id="tabGlobal" style="display:none">
+    <div id="gOps">
+      <span class="chip op-add on" data-op="+">➕</span>
+      <span class="chip op-sub" data-op="-">➖</span>
+      <span class="chip op-mix" data-op="x">🔀</span>
+    </div>
+    <div id="gLv">
+      <span class="chip on" data-lv="mudah">Mudah</span>
+      <span class="chip" data-lv="sederhana">Sederhana</span>
+      <span class="chip" data-lv="sukar">Sukar</span>
+      <span class="chip" data-lv="hero">Hero</span>
+    </div>
+    <table><thead><tr><th>#</th><th>Nama</th><th>Kelas</th><th style="text-align:right">Markah</th></tr></thead>
+    <tbody id="gBody"><tr><td colspan="4" style="color:var(--dim)">Memuatkan…</td></tr></tbody></table>
+  </div>
+
+  <div class="spacer"></div>
+  <button class="btn ghost" onclick="go('s-menu')">Kembali</button>
+</section>
+
+<!-- ============ LENCANA ============ -->
+<section id="s-badges" class="screen">
+  <h2 class="title">Koleksi Lencana</h2>
+  <div class="badges" id="bdgGrid"></div>
+  <div class="spacer"></div>
+  <button class="btn ghost" onclick="go('s-menu')">Kembali</button>
+</section>
+
+<!-- ============ TETAPAN ============ -->
+<section id="s-set" class="screen">
+  <h2 class="title">Tetapan</h2>
+  <div class="sw"><span>🔊 Bunyi</span><div class="toggle on" id="tgSound" onclick="tg('sound')"><i></i></div></div>
+  <div class="sw"><span>📳 Getaran</span><div class="toggle on" id="tgVib" onclick="tg('vib')"><i></i></div></div>
+  <div class="card flat" style="margin-top:8px">
+    <p style="margin-bottom:8px">Nama pemain</p>
+    <input id="nameIn" maxlength="14" placeholder="Nama kamu"
+      style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--txt);font-size:16px;font-family:inherit">
+    <p style="margin:12px 0 8px">Kelas</p>
+    <input id="classIn" maxlength="14" placeholder="cth: 4 Bestari"
+      style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--txt);font-size:16px;font-family:inherit">
+    <p style="margin:10px 0 0;color:var(--dim);font-size:12px">
+      Nama &amp; kelas digunakan pada papan markah global.
+      Status pelayan: <b id="apiStat">—</b></p>
+  </div>
+  <button class="btn" onclick="resetAll()" style="color:var(--red)">Padam semua markah</button>
+  <div class="spacer"></div>
+  <button class="btn pri" onclick="saveSet()">Simpan Tetapan</button>
+  <button class="btn ghost" onclick="go('s-menu')">Kembali</button>
+</section>
+
+</div>
+
+<script>
+/* ================= API (Google Apps Script) =================
+   Tampal "Web app URL" (.../exec) di sini selepas deploy.
+   Biarkan kosong = permainan jalan sepenuhnya offline.            */
+const API_URL='';
+
+let apiOK=null;
+function api(action,params){                    // JSONP — tiada masalah CORS
+  return new Promise((resolve,reject)=>{
+    if(!API_URL){reject(new Error('API belum disediakan'));return}
+    const cb='kj_'+Math.random().toString(36).slice(2,9);
+    const q=Object.assign({action:action,callback:cb},params||{});
+    const url=API_URL+'?'+Object.keys(q).map(k=>k+'='+encodeURIComponent(q[k])).join('&');
+    const s=document.createElement('script');
+    const done=(fn,v)=>{delete window[cb];s.remove();clearTimeout(t);fn(v)};
+    const t=setTimeout(()=>done(reject,new Error('timeout')),12000);
+    window[cb]=d=>{apiOK=true;done(resolve,d)};
+    s.onerror=()=>{apiOK=false;done(reject,new Error('rangkaian'))};
+    s.src=url; document.head.appendChild(s);
+  });
+}
+
+/* ================= STORAN ================= */
+const KEY='kiraJuara.v1';
+const DEF={best:{},todayDate:'',todayCount:0,badges:[],sound:true,vib:true,
+           name:'JUARA',kelas:'',xp:0,pid:'',queue:[]};
+let S=Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}'));
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+function today(){return new Date().toISOString().slice(0,10)}
+if(S.todayDate!==today()){S.todayDate=today();S.todayCount=0;save()}
+if(!S.pid){S.pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);save()}
+
+/* hantar markah; kalau gagal, simpan dalam baris gilir & cuba lagi kemudian */
+function sendScore(rec){
+  if(!API_URL)return;
+  api('submit',rec).then(r=>{if(!r||!r.ok)throw 0}).catch(()=>{
+    S.queue.push(rec); S.queue=S.queue.slice(-40); save();
+  });
+}
+function flushQueue(){
+  if(!API_URL||!S.queue.length)return;
+  const q=S.queue.slice(); S.queue=[]; save();
+  q.forEach(r=>sendScore(r));
+}
+
+/* ================= NAVIGASI ================= */
+function go(id){
+  document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if(id==='s-menu')paintMenu();
+  if(id==='s-board')paintBoard();
+  if(id==='s-set')paintSet();
+}
+
+/* ================= BUNYI ================= */
+let AC=null;
+function beep(f,d,type){
+  if(!S.sound)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(.14,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);
+  }catch(e){}
+}
+function buzz(ms){if(S.vib&&navigator.vibrate)navigator.vibrate(ms)}
+
+/* ================= PENJANA SOALAN ================= */
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+// julat setiap tahap
+const RANGE={mudah:[1,20],sederhana:[10,99],sukar:[100,999],hero:[1,99]};
+
+function makeQ(level,ops){
+  ops = ops && ops.length ? ops : ['+','-'];
+  const op = ops[R(0,ops.length-1)];
+
+  if(level==='hero'){
+    // soalan terbalik: ? + b = c  /  a + ? = c  /  ? - b = c  /  a - ? = c
+    const [lo,hi]=RANGE.hero;
+    let a=R(lo,hi), b=R(1,Math.min(hi,a));      // b <= a supaya tolak tak negatif
+    const slot=R(0,1);                           // 0 = kiri kosong, 1 = kanan kosong
+    if(op==='+'){
+      const c=a+b;
+      if(slot===0) return {txt:`? + ${b} = ${c}`,ans:a,op:'+',key:`?+${b}=${c}`};
+      return {txt:`${a} + ? = ${c}`,ans:b,op:'+',key:`${a}+?=${c}`};
+    }else{
+      const c=a-b;
+      if(slot===0) return {txt:`? − ${b} = ${c}`,ans:a,op:'-',key:`?-${b}=${c}`};
+      return {txt:`${a} − ? = ${c}`,ans:b,op:'-',key:`${a}-?=${c}`};
+    }
+  }
+
+  const [lo,hi]=RANGE[level];
+  if(op==='+'){
+    let a=R(lo,hi), b=R(lo,hi);
+    if(level==='mudah'){                        // jumlah tak melebihi 20
+      a=R(1,19); b=R(1,20-a);
+    }
+    return {txt:`${a} + ${b} = ?`,ans:a+b,op:'+',key:`${a}+${b}`};
+  }else{
+    let a=R(lo,hi), b=R(lo,hi);
+    if(a<b){const t=a;a=b;b=t}                  // elak jawapan negatif
+    if(a===b){b=Math.max(1,b-R(1,5)); if(a===b)a++;}   // elak jawapan sifar
+    return {txt:`${a} − ${b} = ?`,ans:a-b,op:'-',key:`${a}-${b}`};
+  }
+}
+
+/* ================= KEADAAN PERMAINAN ================= */
+let G=null, timer=null;
+
+function newGame(cfg){
+  const ops=cfg.ops&&cfg.ops.length?cfg.ops:['+','-'];
+  G={mode:cfg.mode,level:cfg.level,ops:ops,opKey:ops.length>1?'x':ops[0],
+     score:0,ok:0,no:0,run:0,streak:0,bestStreak:0,freezes:0,frozen:0,
+     time:cfg.mode==='tt'?60:0,limit:cfg.limit||0,qn:0,wrong:[],buf:'',q:null};
+  document.getElementById('tLabel').textContent = cfg.mode==='tt'?'Masa':'Soalan';
+  go('s-game'); nextQ(); paintHud();
+  clearInterval(timer);
+  if(cfg.mode==='tt') timer=setInterval(tick,1000);
+}
+let ttOp='+';                                  // '+' | '-' | 'x' (campur)
+function startTT(level){
+  newGame({mode:'tt',level:level,ops: ttOp==='x'?['+','-']:[ttOp]});
+}
+function startPractice(){
+  const ops=[...document.querySelectorAll('#opChips .chip.on')].map(c=>c.dataset.op);
+  const rg=document.querySelector('#rangeChips .chip.on');
+  if(!ops.length){alert('Pilih sekurang-kurangnya satu operasi.');return}
+  newGame({mode:'latih',level:rg?rg.dataset.r:'mudah',ops:ops,limit:20});
+}
+function replay(){
+  if(G.mode==='tt') startTT(G.level);
+  else newGame({mode:'latih',level:G.level,ops:G.ops,limit:20});
+}
+
+function tick(){
+  if(G.frozen>0){G.frozen--; if(G.frozen===0)document.getElementById('timeBox').classList.remove('frozen'); paintHud(); return}
+  G.time--;
+  if(G.time<=5&&G.time>0)beep(300,.08,'square');
+  if(G.time<=0){paintHud();endGame();return}
+  paintHud();
+}
+
+function nextQ(){
+  G.q=makeQ(G.level,G.ops); G.buf='';
+  const b=document.getElementById('qBadge');
+  b.className='qbadge '+(G.q.op==='+'?'add':'sub');
+  b.textContent=G.q.op==='+'?'Tambah':'Tolak';
+  document.getElementById('qText').innerHTML=
+    G.q.txt.replace(/([+−])/g,'<span class="op">$1</span>').replace(/\?/g,'<span class="blank">?</span>');
+  const a=document.getElementById('ansBox'); a.className='ans'; a.textContent='';
+}
+
+function tap(d){if(G&&G.buf.length<4){G.buf+=d;drawAns();beep(660,.04)}}
+function del(){if(G){G.buf=G.buf.slice(0,-1);drawAns()}}
+function drawAns(){document.getElementById('ansBox').textContent=G.buf}
+
+function submit(){
+  if(!G||G.buf==='')return;
+  const box=document.getElementById('ansBox');
+  const val=parseInt(G.buf,10);
+  G.qn++;
+  if(val===G.q.ans){
+    G.ok++; G.run++;
+    let pts=10+Math.min(G.streak,10)*2;
+    G.score+=pts;
+    box.className='ans ok'; beep(880,.1); buzz(30);
+    pop('+'+pts);
+    S.todayCount++; S.xp+=pts; save();
+    if(G.run%3===0){                       // 3 betul berturut = 1 streak
+      G.streak++; G.bestStreak=Math.max(G.bestStreak,G.streak);
+      if(G.mode==='tt'){G.time+=3; pop('+3 saat ⏱️')}
+      beep(1180,.14);
+      if(G.streak%3===0){                  // 3 streak = beku 5 saat
+        G.freezes++;
+        if(G.mode==='tt'){G.frozen=5;document.getElementById('timeBox').classList.add('frozen');pop('BEKU 5s ❄️')}
+        if(G.freezes%3===0&&G.mode==='tt'){G.time=60;pop('MASA PENUH! 🔥')}
+      }
+    }
+  }else{
+    G.no++; G.run=0; G.streak=0;
+    G.wrong.push(G.q.txt.replace('?',G.q.ans));
+    box.className='ans no'; beep(180,.22,'sawtooth'); buzz([40,40,40]);
+  }
+  paintHud();
+  setTimeout(()=>{
+    if(G.mode==='latih'&&G.qn>=G.limit){endGame();return}
+    nextQ();
+  },380);
+}
+
+function pop(t){
+  const f=document.getElementById('float');
+  f.textContent=t; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+}
+
+function paintHud(){
+  document.getElementById('hScore').textContent=G.score;
+  document.getElementById('hStreak').textContent=G.streak;
+  document.getElementById('hTime').textContent = G.mode==='tt'?G.time:(G.qn+'/'+G.limit);
+  document.getElementById('timeBox').classList.toggle('warn',G.mode==='tt'&&G.time<=10);
+}
+
+/* ================= TAMAT ================= */
+const LVNAME={mudah:'Mudah',sederhana:'Sederhana',sukar:'Sukar',hero:'Hero'};
+const OPNAME={'+':'Tambah','-':'Tolak','x':'Campur'};
+function endGame(){
+  clearInterval(timer);
+  const acc=G.qn?Math.round(G.ok/G.qn*100):0;
+  document.getElementById('rTitle').textContent=
+    (G.mode==='tt'?'Time Trial · ':'Latihan · ')+OPNAME[G.opKey]+' · '+LVNAME[G.level];
+  document.getElementById('rScore').textContent=G.score;
+  document.getElementById('rOk').textContent=G.ok;
+  document.getElementById('rNo').textContent=G.no;
+  document.getElementById('rStreak').textContent=G.bestStreak;
+  document.getElementById('rAcc').textContent=acc+'%';
+
+  let msg='';
+  if(G.mode==='tt'){
+    const k=G.level+'_'+G.opKey, prev=S.best[k]||{score:0,ok:0};
+    if(G.score>prev.score){S.best[k]={score:G.score,ok:G.ok};msg='🎉 Rekod baharu!';beep(1320,.3)}
+  }
+  document.getElementById('rNew').textContent=msg;
+
+  const rc=document.getElementById('reviewCard');
+  if(G.wrong.length){
+    rc.style.display='block';
+    document.getElementById('reviewList').innerHTML=[...new Set(G.wrong)].slice(0,8).map(w=>'• '+w).join('<br>');
+  }else rc.style.display='none';
+
+  checkBadges(acc); save();
+
+  if(G.qn>0) sendScore({id:S.pid,nama:S.name,kelas:S.kelas,mode:G.mode,op:G.opKey,
+    tahap:G.level,markah:G.score,betul:G.ok,silap:G.no,streak:G.bestStreak});
+
+  go('s-result');
+}
+
+/* ================= LENCANA ================= */
+const BADGES=[
+  {id:'first', ic:'🌟', n:'Langkah Pertama', d:'Habis 1 sesi',       t:s=>true},
+  {id:'ok20',  ic:'✅', n:'20 Betul',        d:'20 betul 1 sesi',    t:s=>G.ok>=20},
+  {id:'ok40',  ic:'💪', n:'40 Betul',        d:'40 betul 1 sesi',    t:s=>G.ok>=40},
+  {id:'perf',  ic:'🎯', n:'Tepat 100%',      d:'Kejituan 100%',      t:s=>s===100&&G.qn>=10},
+  {id:'st5',   ic:'🔥', n:'Streak 5',        d:'5 streak berturut',  t:s=>G.bestStreak>=5},
+  {id:'frz',   ic:'❄️', n:'Beku Masa',       d:'Cetus beku 5 saat',  t:s=>G.freezes>=1},
+  {id:'hero',  ic:'🦸', n:'Hero',            d:'Habis tahap Hero',   t:s=>G.level==='hero'},
+  {id:'s300',  ic:'👑', n:'300 Markah',      d:'300 markah 1 sesi',  t:s=>G.score>=300},
+  {id:'goal',  ic:'🏅', n:'Matlamat Harian', d:'30 betul sehari',    t:s=>S.todayCount>=30},
+];
+function checkBadges(acc){
+  BADGES.forEach(b=>{if(!S.badges.includes(b.id)&&b.t(acc))S.badges.push(b.id)});
+}
+function openBadges(){
+  document.getElementById('bdgGrid').innerHTML=BADGES.map(b=>
+    `<div class="bdg ${S.badges.includes(b.id)?'got':''}"><div class="ic">${b.ic}</div>
+     <div style="font-size:11px;font-weight:700">${b.n}</div><small>${b.d}</small></div>`).join('');
+  go('s-badges');
+}
+
+/* ================= PAINT ================= */
+function paintMenu(){
+  const c=Math.min(S.todayCount,30);
+  document.getElementById('goalTxt').textContent=c+' / 30 betul';
+  document.getElementById('goalBar').style.width=(c/30*100)+'%';
+  document.getElementById('lvPill').textContent='Lv '+(Math.floor(S.xp/500)+1);
+  document.getElementById('bdgCount').textContent=S.badges.length+' / '+BADGES.length+' diperoleh';
+}
+function paintBoard(){
+  const cell=k=>{const b=S.best[k];return `<td style="text-align:center">${b?'<b>'+b.score+'</b>':'—'}</td>`};
+  document.getElementById('boardBody').innerHTML=Object.keys(LVNAME).map(l=>
+    `<tr><td>${LVNAME[l]}</td>${cell(l+'_+')}${cell(l+'_-')}${cell(l+'_x')}</tr>`).join('');
+}
+function paintSet(){
+  document.getElementById('tgSound').classList.toggle('on',S.sound);
+  document.getElementById('tgVib').classList.toggle('on',S.vib);
+  document.getElementById('nameIn').value=S.name;
+  document.getElementById('classIn').value=S.kelas||'';
+  document.getElementById('apiStat').textContent=
+    !API_URL?'offline (tiada API)':(apiOK===true?'tersambung ✓':(apiOK===false?'tiada sambungan':'menyemak…'));
+}
+function tg(k){S[k]=!S[k];save();paintSet()}
+function saveSet(){
+  S.name=(document.getElementById('nameIn').value||'JUARA').toUpperCase().slice(0,14);
+  S.kelas=(document.getElementById('classIn').value||'').slice(0,14);
+  save();go('s-menu');
+}
+
+/* ---- papan markah global ---- */
+let gOp='+', gLv='mudah';
+function paintGlobal(){
+  const tb=document.getElementById('gBody');
+  if(!API_URL){tb.innerHTML='<tr><td colspan="4" style="color:var(--dim)">Papan markah global belum disediakan.</td></tr>';return}
+  tb.innerHTML='<tr><td colspan="4" style="color:var(--dim)">Memuatkan…</td></tr>';
+  api('leaderboard',{op:gOp,tahap:gLv,limit:20}).then(r=>{
+    if(!r.ok||!r.rows.length){tb.innerHTML='<tr><td colspan="4" style="color:var(--dim)">Belum ada markah. Jadilah yang pertama!</td></tr>';return}
+    const medal=['🥇','🥈','🥉'];
+    tb.innerHTML=r.rows.map(x=>
+      `<tr${x.id===S.pid?' style="color:var(--gold)"':''}><td>${medal[x.no-1]||x.no}</td>
+       <td>${x.nama||'—'}</td><td style="color:var(--dim)">${x.kelas||''}</td>
+       <td style="text-align:right"><b>${x.markah}</b></td></tr>`).join('');
+  }).catch(()=>{tb.innerHTML='<tr><td colspan="4" style="color:var(--red)">Tiada sambungan.</td></tr>'});
+}
+document.querySelectorAll('#bTabs .chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('#bTabs .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  const g=c.dataset.tab==='global';
+  document.getElementById('tabLocal').style.display=g?'none':'block';
+  document.getElementById('tabGlobal').style.display=g?'block':'none';
+  if(g)paintGlobal();
+});
+document.querySelectorAll('#gOps .chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('#gOps .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  gOp=c.dataset.op;paintGlobal()});
+document.querySelectorAll('#gLv .chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('#gLv .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  gLv=c.dataset.lv;paintGlobal()});
+function resetAll(){
+  if(!confirm('Padam semua markah & lencana dalam peranti ini?'))return;
+  S=Object.assign({},DEF,{todayDate:today(),pid:S.pid,name:S.name,kelas:S.kelas,
+                          sound:S.sound,vib:S.vib});
+  save();go('s-menu');
+}
+
+/* chips */
+document.querySelectorAll('#ttOps .chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('#ttOps .chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on'); ttOp=c.dataset.op;});
+document.querySelectorAll('#opChips .chip').forEach(c=>c.onclick=()=>c.classList.toggle('on'));
+document.querySelectorAll('#rangeChips .chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('#rangeChips .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
+
+/* papan kekunci */
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('s-game').classList.contains('on'))return;
+  if(/^[0-9]$/.test(e.key))tap(e.key);
+  else if(e.key==='Backspace')del();
+  else if(e.key==='Enter')submit();
+});
+
+paintMenu();
+if(API_URL) api('ping').then(flushQueue).catch(()=>{});
+</script>
+</body>
+</html>
