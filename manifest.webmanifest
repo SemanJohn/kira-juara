@@ -1,0 +1,27 @@
+{
+  "name": "Kira Juara — Tambah & Tolak",
+  "short_name": "Kira Juara",
+  "description": "Permainan latihan tambah & tolak untuk murid sekolah rendah.",
+  "lang": "ms",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/kira-juara/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
+  "orientation": "portrait",
+  "background_color": "#0d2340",
+  "theme_color": "#0d2340",
+  "categories": ["education", "games"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Time Trial", "short_name": "Time Trial", "url": "./?mula=tt",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Latihan", "short_name": "Latihan", "url": "./?mula=latih",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}

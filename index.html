@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0d2340">
 <title>Kira Juara</title>
+
+<!-- ===== PWA: pasang di skrin utama seperti aplikasi ===== -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kira Juara">
+<meta name="description" content="Permainan latihan tambah & tolak untuk murid sekolah rendah.">
 <style>
 :root{
   --bg:#0d2340; --bg2:#132f57; --card:rgba(255,255,255,.07); --card2:rgba(255,255,255,.12);
@@ -20,7 +30,17 @@ body{
   color:var(--txt); overflow:hidden; user-select:none;
 }
 #app{max-width:520px;margin:0 auto;height:100dvh;position:relative;overflow:hidden}
-.screen{position:absolute;inset:0;padding:16px;overflow-y:auto;display:none;flex-direction:column;gap:14px}
+.screen{position:absolute;inset:0;overflow-y:auto;display:none;flex-direction:column;gap:14px;
+  padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+          calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+
+/* pemberitahuan kemas kini */
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(120%);
+  bottom:calc(18px + env(safe-area-inset-bottom));z-index:99;
+  background:rgba(13,35,64,.96);border:1px solid var(--gold);color:var(--txt);
+  border-radius:999px;padding:10px 18px;font-size:13px;font-weight:700;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .35s;white-space:nowrap}
+.toast.on{transform:translateX(-50%) translateY(0)}
 .screen.on{display:flex;animation:fade .22s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -122,6 +142,7 @@ th{color:var(--dim);font-size:12px;font-weight:600}
 </style>
 </head>
 <body>
+<div class="toast" id="toast"></div>
 <div id="app">
 
 <!-- ============ MENU ============ -->
@@ -688,6 +709,65 @@ document.addEventListener('keydown',e=>{
 
 paintMenu();
 if(API_URL) api('ping').then(flushQueue).catch(()=>{});
+
+/* ================= PWA: pasang & auto-kemas-kini ================= */
+const APP_VER='1.2.0';
+document.querySelector('.foot').textContent='Kira Juara v'+APP_VER+' · tambah & tolak';
+
+function toast(t,ms){
+  const el=document.getElementById('toast');
+  el.textContent=t; el.classList.add('on');
+  if(ms!==0) setTimeout(()=>el.classList.remove('on'), ms||3000);
+}
+
+let perluMuatSemula=false;
+function sedangMain(){return document.getElementById('s-game').classList.contains('on')}
+/** Muat semula bila selamat — jangan ganggu pemain di tengah sesi. */
+function muatSemulaBilaSelamat(){
+  if(!perluMuatSemula)return;
+  if(sedangMain()){toast('Kemas kini sedia — akan dipasang selepas sesi ini',4000);return}
+  toast('Memasang kemas kini…',0);
+  setTimeout(()=>location.reload(),700);
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+
+      // periksa versi baharu: bila dibuka semula, tukar tab, dan setiap 30 minit
+      const semak=()=>{try{reg.update()}catch(e){}};
+      document.addEventListener('visibilitychange',()=>{if(!document.hidden)semak()});
+      window.addEventListener('online',semak);
+      setInterval(semak,30*60*1000);
+      semak();
+
+      reg.addEventListener('updatefound',()=>{
+        const sw=reg.installing; if(!sw)return;
+        sw.addEventListener('statechange',()=>{
+          if(sw.state==='installed'&&navigator.serviceWorker.controller){
+            perluMuatSemula=true; muatSemulaBilaSelamat();
+          }
+        });
+      });
+    }).catch(()=>{});
+  });
+
+  let dahMuat=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(dahMuat)return; dahMuat=true;
+    if(sedangMain()){perluMuatSemula=true;return}
+    location.reload();
+  });
+}
+
+/* selepas tamat sesi, pasang kemas kini yang tertangguh */
+const _endGame=endGame;
+endGame=function(){_endGame.apply(this,arguments); setTimeout(muatSemulaBilaSelamat,1200)};
+
+/* pintasan dari ikon skrin utama */
+const mula=new URLSearchParams(location.search).get('mula');
+if(mula==='tt') go('s-level');
+else if(mula==='latih') go('s-practice');
 </script>
 </body>
 </html>
